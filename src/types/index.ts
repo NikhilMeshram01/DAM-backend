@@ -44,3 +44,11 @@ export interface AnalyticsData {
     other: number;
   };
 }
+
+export interface ProcessAssetJob {
+  assetId: string;
+  filePath: string;
+  originalName: string;
+  mimeType: string;
+  uploader: string;
+}

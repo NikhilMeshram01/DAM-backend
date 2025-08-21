@@ -15,28 +15,28 @@ const router = Router();
 const upload = multer({ dest: "dist/uploads/" });
 
 // upload via server
-router.post(
-  "/files",
-  upload.single("file"),
-  async (req: Request, res: Response) => {
-    try {
-      if (!req.file) return res.status(400).json({ error: "file is required" });
+// router.post(
+//   "/files",
+//   upload.single("file"),
+//   async (req: Request, res: Response) => {
+//     try {
+//       if (!req.file) return res.status(400).json({ error: "file is required" });
 
-      const key = `${Date.now()}-${req.file.originalname.replace(/\s+/g, "_")}`;
-      const mime = await detectMime(req.file.originalname);
-      await uploadFromPath(key, req.file.path, mime);
+//       const key = `${Date.now()}-${req.file.originalname.replace(/\s+/g, "_")}`;
+//       const mime = await detectMime(req.file.originalname);
+//       await uploadFromPath(key, req.file.path, mime);
 
-      fs.unlink(req.file.path, (err) => {
-        if (err) console.warn("Failed to delete temp file:", err);
-      });
+//       fs.unlink(req.file.path, (err) => {
+//         if (err) console.warn("Failed to delete temp file:", err);
+//       });
 
-      return res.json({ key });
-    } catch (error: any) {
-      console.error(error);
-      return res.status(500).json({ error: "upload failed" });
-    }
-  }
-);
+//       return res.json({ key });
+//     } catch (error: any) {
+//       console.error(error);
+//       return res.status(500).json({ error: "upload failed" });
+//     }
+//   }
+// );
 
 // download (stream)
 router.get("/files/:key", async (req: Request, res: Response) => {

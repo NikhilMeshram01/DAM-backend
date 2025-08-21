@@ -9,7 +9,7 @@ export interface IAsset extends Document {
   width?: number;
   height?: number;
   duration?: number;
-  page?: number;
+  pages?: number;
   bucket: string;
   path: string;
   versions: {
@@ -77,4 +77,5 @@ AssetSchema.index({ tags: 1 });
 AssetSchema.index({ createdAt: 1 });
 AssetSchema.index({ status: 1 });
 
-export default model<IAsset>("Asset", AssetSchema);
+const Asset = model<IAsset>("Asset", AssetSchema);
+export default Asset;
