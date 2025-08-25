@@ -3,6 +3,7 @@ import { Schema, model, Document, Types } from "mongoose";
 export interface IAsset extends Document {
   _id: Types.ObjectId;
   originalName: string;
+  key: string;
   fileName: string;
   mimeType: string;
   size: string;
@@ -24,7 +25,7 @@ export interface IAsset extends Document {
   tags: string[];
   metadata: Record<string, any>;
   category: "image" | "video" | "audio" | "document" | "archive" | "other";
-  status: "processing" | "pending" | "failed";
+  status: "processing" | "pending" | "failed" | "processed";
   uploader: string;
   downloadCount: number;
   createdAt: Date;
@@ -33,12 +34,14 @@ export interface IAsset extends Document {
 
 const AssetSchema: Schema = new Schema(
   {
+    _id: { type: Schema.Types.ObjectId, auto: true },
     originalName: { type: String, required: true },
     fileName: { type: String, required: true },
     mimeType: { type: String, required: true },
     size: { type: String, required: true },
     width: Number,
     height: Number,
+    key: { type: String, required: true },
     duration: Number,
     pages: Number, // for PDFs and document
     bucket: { type: String, required: true, default: "assets" },
@@ -61,7 +64,7 @@ const AssetSchema: Schema = new Schema(
     },
     status: {
       type: String,
-      enum: ["processing", "pending", "failed"],
+      enum: ["processing", "pending", "failed", "processed"],
       default: "processing",
     },
     uploader: { type: String, default: "system" },
@@ -70,7 +73,6 @@ const AssetSchema: Schema = new Schema(
   { timestamps: true }
 );
 
-AssetSchema.index({ _id: 1 });
 AssetSchema.index({ mimeType: 1 });
 AssetSchema.index({ category: 1 });
 AssetSchema.index({ tags: 1 });

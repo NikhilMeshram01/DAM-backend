@@ -10,9 +10,11 @@ const redis = new Redis({
   password: REDIS_PASSWORD,
   db: 0, // optional, default DB index
   // tls: {}, // uncomment if using Redis over TLS (e.g. AWS, Redis Cloud)
+  maxRetriesPerRequest: null,
 });
 
 redis.on("connect", () => console.log("✅ Redis connected"));
 redis.on("error", (err) => console.error("❌ Redis error:", err));
+redis.ping().then(console.log); // should log "PONG"
 
 export default redis;

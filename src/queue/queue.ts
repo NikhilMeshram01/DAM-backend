@@ -1,3 +1,4 @@
+// queues/queue.ts
 import { Queue } from "bullmq";
 import redis from "../configs/redis.js";
 
@@ -11,3 +12,8 @@ export const queue = new Queue("storage-processing", {
     },
   },
 });
+
+// ✅ Export this so it can be imported in controllers
+export async function enqueueVideoProcessingJob(assetId: string) {
+  await queue.add("process-video", { assetId });
+}

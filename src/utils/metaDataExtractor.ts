@@ -1,23 +1,24 @@
 import fs from "fs";
 import sharp from "sharp";
-import mm from "music-metadata";
+import * as mm from "music-metadata";
 import poppler from "pdf-poppler";
 import Ffmpeg from "fluent-ffmpeg";
 import textract from "textract";
+import path from "path";
 
 export const extractMetaData = async (
   filePath: string,
   mimeType: string
-): Promise<Record<string, string>> => {
+): Promise<Record<string, any>> => {
   const metadata: Record<string, any> = {};
 
   try {
     const stats = fs.statSync(filePath);
     metadata.size = stats.size;
-    metadata.lastModified = stats.mtime;
+    metadata.lastModified = stats.mtime.toISOString();
 
-    // extract tags from filename
-    const filename = filePath.split("/").pop() || "";
+    const filename = path.basename(filePath);
+    metadata.fileName = filename;
     metadata.tags = extractTagsFromFilename(filename);
 
     if (mimeType.startsWith("image/")) {
@@ -28,77 +29,102 @@ export const extractMetaData = async (
       metadata.space = imageMetadata.space;
       metadata.channels = imageMetadata.channels;
       metadata.density = imageMetadata.density;
-    } else if (mimeType.startsWith("video/")) {
-      metadata.duration = await getVideoDuration(filePath);
-      metadata.format = mimeType.split("/")[1];
+      metadata.hasAlpha = imageMetadata.hasAlpha;
 
-      //   get video dimensions
-      const videoDims = await getVideoDimensions(filePath);
-      if (videoDims) {
-        metadata.width = videoDims.width;
-        metadata.height = videoDims.height;
+      // Optional: EXIF data
+      if (imageMetadata.exif) {
+        metadata.exif = imageMetadata.exif.toString("base64").slice(0, 100); // preview
+      }
+    } else if (mimeType.startsWith("video/")) {
+      const duration = await getVideoDuration(filePath);
+      const dimensions = await getVideoDimensions(filePath);
+      const formatDetails = await getVideoMetadata(filePath);
+
+      metadata.duration = duration;
+      metadata.format = formatDetails.formatName;
+      metadata.codec = formatDetails.videoCodec;
+      metadata.audioCodec = formatDetails.audioCodec;
+      metadata.frameRate = formatDetails.frameRate;
+      metadata.bitRate = formatDetails.bitRate;
+      if (dimensions) {
+        metadata.width = dimensions.width;
+        metadata.height = dimensions.height;
       }
     } else if (mimeType.startsWith("audio/")) {
-      const audioMetadat = await mm.parseFile(filePath);
-      metadata.duration = audioMetadat.format.duration;
-      metadata.bitrate = audioMetadat.format.bitrate;
-      metadata.codec = audioMetadat.format.codec;
+      const audioMeta = await mm.parseFile(filePath);
+      metadata.duration = audioMeta.format.duration;
+      metadata.bitrate = audioMeta.format.bitrate;
+      metadata.codec = audioMeta.format.codec;
+      metadata.sampleRate = audioMeta.format.sampleRate;
+      metadata.numberOfChannels = audioMeta.format.numberOfChannels;
 
-      if (audioMetadat.common) {
-        metadata.title = audioMetadat.common.title;
-        metadata.artist = audioMetadat.common.artist;
-        metadata.album = audioMetadat.common.album;
-        metadata.year = audioMetadat.common.year;
-        metadata.genre = audioMetadat.common.genre;
+      if (audioMeta.common) {
+        metadata.title = audioMeta.common.title;
+        metadata.artist = audioMeta.common.artist;
+        metadata.album = audioMeta.common.album;
+        metadata.year = audioMeta.common.year;
+        metadata.genre = audioMeta.common.genre?.join(", ");
+        metadata.track = audioMeta.common.track?.no;
+        metadata.composer = audioMeta.common.composer;
+        metadata.hasArtwork = !!audioMeta.common.picture?.length;
       }
-    } else if (mimeType.startsWith("application/pdf")) {
-      // extract pdf metadata
+    } else if (mimeType === "application/pdf") {
       const pdfInfo = await poppler.info(filePath);
       metadata.pages = pdfInfo.pages;
       metadata.title = pdfInfo.title;
       metadata.author = pdfInfo.author;
+      metadata.subject = pdfInfo.subject;
+      metadata.keywords = pdfInfo.keywords;
+      metadata.creationDate = pdfInfo.creation_date;
       metadata.pdfVersion = pdfInfo.pdf_version;
 
-      //   extract text content for search indexing
+      // Text indexing
       try {
         const text = await extractText(filePath, mimeType);
-        metadata.textContent = text.substring(0, 1000); // store first 1000 characters
+        metadata.textContent = text.substring(0, 1000);
+        // metadata.language = detectLanguage(text); // Optional
       } catch (error) {
-        console.warn("could not extract text from pdf : ", error);
+        console.warn("Text extraction failed from PDF:", error);
       }
     } else if (
       mimeType.startsWith("text/") ||
-      mimeType === "application/msword" ||
-      mimeType === "application/vnd.ms-excel" ||
-      mimeType === "application/vnd.ms-powerpoint"
+      mimeType.includes("word") ||
+      mimeType.includes("excel") ||
+      mimeType.includes("powerpoint") ||
+      mimeType.includes("openxml")
     ) {
-      // extract text from documents
       try {
         const text = await extractText(filePath, mimeType);
-        metadata.textContent = text.substring(0, 1000); // store first 1000 characters
+        metadata.textContent = text.substring(0, 1000);
+        // metadata.language = detectLanguage(text); // Optional
       } catch (error) {
-        console.warn("could not extract text from document : ", error);
+        console.warn("Text extraction failed from document:", error);
       }
     }
   } catch (error) {
-    console.error("Error extracting metadata : ", error);
+    console.error("Error extracting metadata:", error);
   }
+
   return metadata;
 };
+
 export const getVideoDuration = async (filePath: string): Promise<number> => {
   return new Promise((resolve, reject) => {
     Ffmpeg.ffprobe(filePath, (err, metadata) => {
-      if (err) reject(err);
+      if (err || !metadata?.format) {
+        return reject(err || new Error("No metadata found"));
+      }
       resolve(metadata.format.duration || 0);
     });
   });
 };
+
 export const getVideoDimensions = async (
   filePath: string
 ): Promise<{ width: number; height: number } | null> => {
   return new Promise((resolve, reject) => {
     Ffmpeg.ffprobe(filePath, (err, metadata) => {
-      if (err) reject(err);
+      if (err) return reject(err);
 
       const videoStream = metadata.streams.find(
         (stream) => stream.codec_type === "video"
@@ -111,6 +137,58 @@ export const getVideoDimensions = async (
       } else {
         resolve(null);
       }
+    });
+  });
+};
+
+export const getVideoMetadata = async (
+  filePath: string
+): Promise<{
+  formatName?: string;
+  videoCodec?: string;
+  audioCodec?: string;
+  frameRate?: number;
+  bitRate?: number;
+}> => {
+  return new Promise((resolve, reject) => {
+    Ffmpeg.ffprobe(filePath, (err, metadata) => {
+      if (err) return reject(err);
+
+      const videoStream = metadata.streams.find(
+        (s) => s.codec_type === "video"
+      );
+      const audioStream = metadata.streams.find(
+        (s) => s.codec_type === "audio"
+      );
+
+      const result: {
+        formatName?: string;
+        videoCodec?: string;
+        audioCodec?: string;
+        frameRate?: number;
+        bitRate?: number;
+      } = {};
+
+      if (metadata.format?.format_name)
+        result.formatName = metadata.format.format_name;
+      if (videoStream?.codec_name) result.videoCodec = videoStream.codec_name;
+      if (audioStream?.codec_name) result.audioCodec = audioStream.codec_name;
+      const rawBitrate = metadata.format.bit_rate;
+      if (typeof rawBitrate === "number") {
+        result.bitRate = rawBitrate;
+      } else if (typeof rawBitrate === "string") {
+        const parsed = parseInt(rawBitrate);
+        if (!isNaN(parsed)) result.bitRate = parsed;
+      }
+      if (videoStream?.r_frame_rate) {
+        const [numStr, denomStr] = videoStream.r_frame_rate.split("/") ?? [];
+        const num = Number(numStr);
+        const denom = Number(denomStr);
+        if (!isNaN(num) && !isNaN(denom) && denom !== 0) {
+          result.frameRate = num / denom;
+        }
+      }
+      resolve(result);
     });
   });
 };
@@ -130,8 +208,6 @@ export const extractText = async (
 export const extractTagsFromFilename = (filename: string): string[] => {
   const tags: string[] = [];
   const nameWithoutExt = filename.split(".").slice(0, -1).join(".");
-
-  //   extract words seperated by underscore, hyphens, or camelCase
   const words = nameWithoutExt.split(/[_\-\s]+/);
 
   for (const word of words) {
@@ -147,13 +223,13 @@ export const getFileCategory = (mimeType: string): string => {
   if (mimeType.startsWith("image/")) return "image";
   if (mimeType.startsWith("video/")) return "video";
   if (mimeType.startsWith("audio/")) return "audio";
-  if (mimeType.startsWith("application/pdf")) return "document";
+  if (mimeType === "application/pdf") return "document";
 
   if (
     mimeType.startsWith("text/") ||
-    mimeType === "appplication/msword" ||
-    mimeType === "appplication/vnd.ms-excel" ||
-    mimeType === "appplication/vnd.ms-powerpoint"
+    mimeType.includes("word") ||
+    mimeType.includes("excel") ||
+    mimeType.includes("powerpoint")
   ) {
     return "document";
   }
