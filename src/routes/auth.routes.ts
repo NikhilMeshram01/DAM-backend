@@ -1,36 +1,37 @@
 import express from "express";
 import {
-  getUserProfile,
+  // getUserProfile,
   loginUser,
   logoutUser,
   registerUser,
-  updateProfile,
+  // updateProfile,
   refreshTokenHandler,
-  uploadProfilePic,
+  // uploadProfilePic,
 } from "../controllers/auth.controllers.js";
-import { authenticateJWT } from "../utils/jwt.js";
+// import { authenticateJWT } from "../utils/jwt.js";
 import { validate } from "../middlewares/validate.js";
 import {
   loginSchema,
   registerSchema,
-  updateSchema,
+  // updateSchema,
 } from "../validators/auth.validator.js";
 import { loginLimiter } from "../configs/rateLimiter.js";
-import { upload } from "../configs/upload.js";
+// import { upload } from "../configs/upload.js";
 
 const router = express.Router();
 
 router.post("/register", loginLimiter, validate(registerSchema), registerUser);
+
 router.post("/login", loginLimiter, validate(loginSchema), loginUser);
 router.post("/logout", logoutUser);
-router.get("/profile", authenticateJWT, getUserProfile);
-router.patch("/update", authenticateJWT, validate(updateSchema), updateProfile);
-router.post(
-  "/upload-picture",
-  authenticateJWT,
-  upload.single("profilePicture"),
-  uploadProfilePic
-);
+// router.get("/profile", authenticateJWT, getUserProfile);
+// router.patch("/update", authenticateJWT, validate(updateSchema), updateProfile);
+// router.post(
+//   "/upload-picture",
+//   authenticateJWT,
+//   upload.single("profilePicture"),
+//   uploadProfilePic
+// );
 router.post("/refresh-token", refreshTokenHandler);
 
 export default router;

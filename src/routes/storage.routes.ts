@@ -7,7 +7,7 @@ import { authenticateJWT } from "../utils/jwt.js";
 
 const router = Router();
 
-// router.use(authenticateJWT);
+router.use(authenticateJWT);
 
 // Step 1: Generate presigned PUT URL for MinIO
 router.post("/presign", generatePresignedUrl);

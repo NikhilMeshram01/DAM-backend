@@ -1,19 +1,12 @@
 import bcrypt from "bcryptjs";
 import { Document, Schema, Types, model } from "mongoose";
-import { string } from "zod/mini";
 
 export interface IUser extends Document {
   _id: Types.ObjectId;
   email: string;
   password: string;
-  firstName: string;
-  lastName: string;
-  dob: Date;
-  gender: "male" | "female" | "other";
-  height: number;
-  weight: number;
+  name: string;
   role?: string;
-  level: "beginner" | "intermediate" | "advanced";
   profilePicture: string;
   refreshToken?: string;
   createdAt: Date;
@@ -34,30 +27,14 @@ const userSchema = new Schema<IUser>(
       required: true,
       select: false,
     },
-    firstName: {
+    name: {
       type: String,
       trim: true,
     },
-    lastName: {
-      type: String,
-      trim: true,
-    },
-    dob: Date,
-    gender: {
-      type: String,
-      enum: ["male", "female", "other"],
-    },
-    height: Number,
-    weight: Number,
     profilePicture: String,
     refreshToken: {
       type: String,
       default: "",
-    },
-    level: {
-      type: String,
-      enum: ["beginner", "intermediate", "advanced"],
-      default: "beginner",
     },
   },
   { timestamps: true }

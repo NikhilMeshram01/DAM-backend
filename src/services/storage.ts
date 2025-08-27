@@ -24,7 +24,7 @@ export const uploadFromPath = async (
 };
 
 // upload from buffer (multer memory storage)
-const uploadFromBuffer = async (
+export const uploadFromBuffer = async (
   objectName: string,
   buffer: Buffer,
   mime?: string
