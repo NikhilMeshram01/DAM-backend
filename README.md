@@ -71,3 +71,8 @@ Tag, Categorize, Search Assets
   DELETE /api/categories/:id → Delete category
 
 ## MongoDB Collections
+
+Installed
+
+1. LibreOffice on Windows -> https://www.libreoffice.org/download/download/
+2. ffmpeg + ffprobe on Windows -> https://www.gyan.dev/ffmpeg/builds/

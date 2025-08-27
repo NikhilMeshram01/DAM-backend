@@ -2,7 +2,7 @@ import type { Request, Response, NextFunction } from "express";
 import { v4 as uuidv4 } from "uuid";
 import path from "path";
 import Asset from "../models/asset.model.js";
-import { enqueueVideoProcessingJob } from "../queue/queue.js"; // or general asset processing queue
+import { enqueueProcessingJob } from "../queue/queue.js"; // or general asset processing queue
 import minioClient, { BUCKET } from "../configs/minio.js";
 
 // Generate a presigned PUT URL for direct upload to MinIO
@@ -68,7 +68,7 @@ export const confirmUpload = async (
     });
 
     // Enqueue processing job (thumbnail, transcode, extract metadata, etc.)
-    await enqueueVideoProcessingJob(asset._id.toString());
+    await enqueueProcessingJob(asset._id.toString());
 
     return res.status(201).json({
       message: "Upload confirmed and processing started",

@@ -36,7 +36,10 @@ export const authenticateJWT = (
   res: Response,
   next: NextFunction
 ) => {
+  console.log("req.cookies", req.cookies);
+
   const token = req.cookies.token;
+  console.log("token", token);
 
   // if (typeof authHeader !== "string" || !authHeader.startsWith("token=")) {
   //   return res.status(401).json({

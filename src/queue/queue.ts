@@ -14,6 +14,7 @@ export const queue = new Queue("storage-processing", {
 });
 
 // ✅ Export this so it can be imported in controllers
-export async function enqueueVideoProcessingJob(assetId: string) {
+export async function enqueueProcessingJob(assetId: string) {
+  console.log("queue should be triggered");
   await queue.add("process-video", { assetId });
 }

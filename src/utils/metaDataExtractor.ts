@@ -2,9 +2,14 @@ import fs from "fs";
 import sharp from "sharp";
 import * as mm from "music-metadata";
 import poppler from "pdf-poppler";
-import Ffmpeg from "fluent-ffmpeg";
+// import Ffmpeg from "fluent-ffmpeg";
 import textract from "textract";
 import path from "path";
+
+import ffmpeg from "fluent-ffmpeg";
+
+ffmpeg.setFfmpegPath("C:/ffmpeg/bin/ffmpeg.exe");
+ffmpeg.setFfprobePath("C:/ffmpeg/bin/ffprobe.exe");
 
 export const extractMetaData = async (
   filePath: string,
@@ -19,7 +24,13 @@ export const extractMetaData = async (
 
     const filename = path.basename(filePath);
     metadata.fileName = filename;
-    metadata.tags = extractTagsFromFilename(filename);
+    const category = getFileCategory(mimeType);
+    metadata.tags = generateAssetTags({
+      filename,
+      mimeType,
+      category,
+      uploader: "system", // or dynamic value if available
+    });
 
     if (mimeType.startsWith("image/")) {
       const imageMetadata = await sharp(filePath).metadata();
@@ -102,15 +113,16 @@ export const extractMetaData = async (
       }
     }
   } catch (error) {
+    metadata.error = error instanceof Error ? error.message : String(error);
     console.error("Error extracting metadata:", error);
   }
 
   return metadata;
 };
 
-export const getVideoDuration = async (filePath: string): Promise<number> => {
+const getVideoDuration = async (filePath: string): Promise<number> => {
   return new Promise((resolve, reject) => {
-    Ffmpeg.ffprobe(filePath, (err, metadata) => {
+    ffmpeg.ffprobe(filePath, (err, metadata) => {
       if (err || !metadata?.format) {
         return reject(err || new Error("No metadata found"));
       }
@@ -119,11 +131,11 @@ export const getVideoDuration = async (filePath: string): Promise<number> => {
   });
 };
 
-export const getVideoDimensions = async (
+const getVideoDimensions = async (
   filePath: string
 ): Promise<{ width: number; height: number } | null> => {
   return new Promise((resolve, reject) => {
-    Ffmpeg.ffprobe(filePath, (err, metadata) => {
+    ffmpeg.ffprobe(filePath, (err, metadata) => {
       if (err) return reject(err);
 
       const videoStream = metadata.streams.find(
@@ -141,7 +153,7 @@ export const getVideoDimensions = async (
   });
 };
 
-export const getVideoMetadata = async (
+const getVideoMetadata = async (
   filePath: string
 ): Promise<{
   formatName?: string;
@@ -151,7 +163,7 @@ export const getVideoMetadata = async (
   bitRate?: number;
 }> => {
   return new Promise((resolve, reject) => {
-    Ffmpeg.ffprobe(filePath, (err, metadata) => {
+    ffmpeg.ffprobe(filePath, (err, metadata) => {
       if (err) return reject(err);
 
       const videoStream = metadata.streams.find(
@@ -193,33 +205,63 @@ export const getVideoMetadata = async (
   });
 };
 
-export const extractText = async (
+const extractText = async (
   filePath: string,
   mimeType: string
 ): Promise<string> => {
   return new Promise((resolve, reject) => {
     textract.fromFileWithMimeAndPath(mimeType, filePath, (err, text) => {
       if (err) reject(err);
-      resolve(text);
+      resolve(text || "");
     });
   });
 };
 
-export const extractTagsFromFilename = (filename: string): string[] => {
-  const tags: string[] = [];
+const generateAssetTags = ({
+  filename,
+  mimeType,
+  category,
+  uploader = "system",
+  date = new Date(),
+}: {
+  filename: string;
+  mimeType: string;
+  category: string;
+  uploader?: string;
+  date?: Date;
+}): string[] => {
+  const tags: Set<string> = new Set();
+
+  // From filename
   const nameWithoutExt = filename.split(".").slice(0, -1).join(".");
   const words = nameWithoutExt.split(/[_\-\s]+/);
-
   for (const word of words) {
-    if (word.length > 2) {
-      tags.push(word.toLowerCase());
+    if (word.length > 2 && /^[a-zA-Z0-9]+$/.test(word)) {
+      tags.add(word.toLowerCase());
     }
   }
 
-  return tags;
+  // From MIME type and extension
+  const ext = path.extname(filename).slice(1).toLowerCase();
+  if (ext) tags.add(ext);
+  if (mimeType) tags.add(mimeType.toLowerCase());
+
+  // Category
+  tags.add(category.toLowerCase());
+
+  // Uploader
+  tags.add(`uploader:${uploader}`);
+
+  // Date-based tags
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  tags.add(`year:${year}`);
+  tags.add(`month:${month}`);
+
+  return Array.from(tags);
 };
 
-export const getFileCategory = (mimeType: string): string => {
+const getFileCategory = (mimeType: string): string => {
   if (mimeType.startsWith("image/")) return "image";
   if (mimeType.startsWith("video/")) return "video";
   if (mimeType.startsWith("audio/")) return "audio";
