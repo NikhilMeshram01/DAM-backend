@@ -14,7 +14,9 @@ import helmet from "helmet";
 import cors from "cors";
 import connectDB from "./configs/db.js";
 import authRoutes from "./routes/auth.routes.js";
+import analyticsRoutes from "./routes/analytic.routes.js";
 import storageRoutes from "./routes/storage.routes.js";
+import assetRoutes from "./routes/asset.routes.js";
 import { CLIENT_URL, PORT } from "./configs/configs.js";
 import { globalErrorHandler } from "./utils/errorHandler.js";
 import { apiLimiter } from "./configs/rateLimiter.js";
@@ -67,6 +69,8 @@ server.use("/uploads", express.static(path.join(__dirname, "uploads")));
 const API_PREFIX = "/api/v1";
 server.use(`${API_PREFIX}/users`, authRoutes);
 server.use(`${API_PREFIX}/storage`, storageRoutes);
+server.use(`${API_PREFIX}/asset`, assetRoutes);
+server.use(`${API_PREFIX}/analytics`, analyticsRoutes);
 
 // 404 handler
 // server.all("*", (req: Request, res: Response) => {

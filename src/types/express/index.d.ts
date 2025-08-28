@@ -7,5 +7,6 @@ declare module "express-serve-static-core" {
       role?: string;
       // add other properties your auth middleware attaches
     };
+    asset?: IAsset;
   }
 }

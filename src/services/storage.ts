@@ -12,7 +12,7 @@ export const ensureBucket = async () => {
 };
 
 // upload from a local file path (created by multer disk storage)
-export const uploadFromPath = async (
+const uploadFromPath = async (
   objectName: string,
   localPath: string,
   mime?: string
@@ -24,7 +24,7 @@ export const uploadFromPath = async (
 };
 
 // upload from buffer (multer memory storage)
-export const uploadFromBuffer = async (
+const uploadFromBuffer = async (
   objectName: string,
   buffer: Buffer,
   mime?: string
@@ -35,22 +35,22 @@ export const uploadFromBuffer = async (
   return { key: objectName };
 };
 
-export const getObjectStream = async (key: string): Promise<Readable> => {
+const getObjectStream = async (key: string): Promise<Readable> => {
   const stream = await minioClient.getObject(BUCKET, key);
   return stream;
 };
 
 // presigned GET (temporary public URL)
-export const presignedGetURL = async (key: string, expiresInSeconds = 3600) => {
+const presignedGetURL = async (key: string, expiresInSeconds = 3600) => {
   return minioClient.presignedGetObject(BUCKET, key, expiresInSeconds);
 };
 
 // presigned PUT (temporary public URL)
-export const presignedPUTURL = async (key: string, expiresInSeconds = 3600) => {
+const presignedPUTURL = async (key: string, expiresInSeconds = 3600) => {
   return minioClient.presignedPutObject(BUCKET, key, expiresInSeconds);
 };
 
 // content-Type helper
-export const detectMime = async (filename: string) => {
+const detectMime = async (filename: string) => {
   return mimeLookup(filename) || "application/octet-stream";
 };

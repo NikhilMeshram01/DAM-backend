@@ -15,6 +15,7 @@ import {
   generateDocxThumbnail,
 } from "../utils/thumbnailGenerator.js";
 import { MONGODB_URI } from "../configs/configs.js";
+import Analytics from "../models/analytics.model.js";
 
 await mongoose.connect(MONGODB_URI);
 console.log("✅ Connected to MongoDB (worker)");
