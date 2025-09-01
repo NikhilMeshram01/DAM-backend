@@ -5,6 +5,7 @@ declare module "express-serve-static-core" {
     user?: {
       userId: string;
       role?: string;
+      team: string;
       // add other properties your auth middleware attaches
     };
     asset?: IAsset;

@@ -5,6 +5,7 @@ import Asset from "../models/asset.model.js";
 import { enqueueProcessingJob } from "../queue/queue.js"; // or general asset processing queue
 import minioClient, { BUCKET } from "../configs/minio.js";
 import catchAsync from "../utils/catchAsync.js";
+import { AppError } from "../utils/errorHandler.js";
 
 // Generate a presigned PUT URL for direct upload to MinIO
 export const generatePresignedUrl = catchAsync(
@@ -44,7 +45,7 @@ export const confirmUpload = catchAsync(
       console.log("confirmUpload hit");
       const { key, fileName, originalName, mimeType, size, tags, category } =
         req.body;
-      const userId = req.user?.userId; // assuming `isAuthenticated` adds `user` to req
+      const user = req.user?.userId; // assuming `isAuthenticated` adds `user` to req
       if (!key || !fileName || !mimeType || !size) {
         return res.status(400).json({ message: "Missing required fields" });
       }
@@ -53,12 +54,13 @@ export const confirmUpload = catchAsync(
       const asset = await Asset.create({
         key,
         fileName,
+        team: req.user?.team,
         originalName,
         mimeType,
         size,
         tags: tags || [],
         category: category || "other",
-        uploader: userId || "system",
+        uploader: req.user?.userId || "system",
         status: "pending",
         bucket: process.env.MINIO_BUCKET_NAME || "assets",
         path: key, // you can store the key as path or generate another if needed
@@ -77,6 +79,53 @@ export const confirmUpload = catchAsync(
       });
     } catch (error) {
       next(error);
+    }
+  }
+);
+
+const getPresignedDownloadUrl = async (bucket: string, objectName: string) => {
+  try {
+    const url = await minioClient.presignedGetObject(
+      bucket,
+      objectName,
+      60 * 5,
+      {
+        "response-content-disposition": `attachment; filename="${objectName}"`,
+      }
+    ); // 5 min expiry
+
+    return url;
+  } catch (err) {
+    throw new Error("Failed to generate download URL");
+  }
+};
+
+// GET /api/assets/:id/download
+export const downloadAsset = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const asset = await Asset.findById(req.params.id);
+
+    if (!asset) {
+      return next(new AppError("Asset not found", 404));
+    }
+
+    const bucket = BUCKET; // wherever you're storing this
+    // const objectName = asset.fileName; // MinIO object key
+    const objectName = asset.key; // MinIO object key
+
+    try {
+      const url = await getPresignedDownloadUrl(bucket, objectName);
+
+      // ✅ Increment download count
+      asset.downloadCount += 1;
+      await asset.save();
+
+      res.status(200).json({
+        status: "success",
+        url, // return the signed URL to the client
+      });
+    } catch (err) {
+      return next(new AppError("Could not generate download link", 500));
     }
   }
 );

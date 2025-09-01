@@ -3,6 +3,7 @@ import { Schema, model, Document, Types } from "mongoose";
 export interface IAsset extends Document {
   _id: Types.ObjectId;
   originalName: string;
+  team: string;
   key: string;
   fileName: string;
   mimeType: string;
@@ -21,6 +22,12 @@ export interface IAsset extends Document {
     "720"?: string;
     preview?: string;
     waveform?: string;
+    compressed: string;
+  };
+  downloadUrl: {
+    thumbnail: string;
+    original: string;
+    compressed: string;
   };
   tags: string[];
   metadata: Record<string, any>;
@@ -35,6 +42,7 @@ export interface IAsset extends Document {
 const AssetSchema: Schema = new Schema(
   {
     _id: { type: Schema.Types.ObjectId, auto: true },
+    team: { type: String, required: true },
     originalName: { type: String, required: true },
     fileName: { type: String, required: true },
     mimeType: { type: String, required: true },
@@ -54,6 +62,12 @@ const AssetSchema: Schema = new Schema(
       "720": String,
       preview: String, // for PDFs and document
       waveform: String, // for audio
+      compressed: String,
+    },
+    downloadUrl: {
+      original: String,
+      thumbnail: String,
+      compressed: String,
     },
     tags: [{ type: String }],
     metadata: { type: Schema.Types.Mixed, default: {} },
@@ -67,7 +81,10 @@ const AssetSchema: Schema = new Schema(
       enum: ["processing", "pending", "failed", "processed"],
       default: "processing",
     },
-    uploader: { type: String, default: "system" },
+    uploader: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+    },
     downloadCount: { type: Number, default: 0 },
   },
   { timestamps: true }

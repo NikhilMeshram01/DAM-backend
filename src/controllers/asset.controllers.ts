@@ -4,8 +4,16 @@ import { AppError } from "../utils/errorHandler.js";
 import Asset from "../models/asset.model.js";
 
 // Utility: Build Mongoose query filters
-const buildAssetQuery = (query: any) => {
+const buildAssetQuery = (query: any, userTeam: string, isAdmin: boolean) => {
   const filter: Record<string, any> = {};
+
+  // Apply team filter only if user is NOT an admin
+  if (!isAdmin) {
+    if (!userTeam) {
+      throw new Error("Team is required for non-admins.");
+    }
+    filter.team = userTeam;
+  }
 
   if (query.category) {
     filter.category = query.category;
@@ -24,8 +32,8 @@ const buildAssetQuery = (query: any) => {
     filter.tags = { $all: tags };
   }
 
-  if (query.q) {
-    const searchRegex = new RegExp(query.q, "i");
+  if (query.search) {
+    const searchRegex = new RegExp(query.search, "i");
     filter.$or = [
       { originalName: searchRegex },
       { fileName: searchRegex },
@@ -39,17 +47,32 @@ const buildAssetQuery = (query: any) => {
 // GET /api/assets?page=1&limit=20&sort=createdAt&category=image&status=processed&q=sunset
 export const getAssets = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    console.log("getAssets hit");
+    const role = req.user?.role;
+    const team = req.user?.team;
+
+    console.log("req.query", req.query);
+
+    const isAdmin = role === "admin";
+
+    // Only enforce team presence for non-admins
+    if (!isAdmin && !team) {
+      return next(new AppError("No team found", 400));
+    }
+
     const page = parseInt(req.query.page as string, 10) || 1;
     const limit = parseInt(req.query.limit as string, 10) || 20;
     const skip = (page - 1) * limit;
-
     const sortBy = (req.query.sort as string) || "-createdAt";
 
-    const filter = buildAssetQuery(req.query);
+    const filter = buildAssetQuery(req.query, team || "", isAdmin);
 
     const [assets, total] = await Promise.all([
-      Asset.find(filter).sort(sortBy).skip(skip).limit(limit),
+      // Asset.find(filter).sort(sortBy).skip(skip).limit(limit),
+      Asset.find(filter)
+        .populate("uploader", "email") // only get the email field
+        .sort(sortBy)
+        .skip(skip)
+        .limit(limit),
       Asset.countDocuments(filter),
     ]);
 

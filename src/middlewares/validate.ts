@@ -12,7 +12,9 @@ export const validate =
   (schema: ZodObject<ZodRawShape>) =>
   (req: Request, res: Response, next: NextFunction) => {
     try {
+      console.log("1");
       req.body = schema.parse(req.body);
+      console.log("2");
       next();
     } catch (error) {
       if (error instanceof ZodError) {

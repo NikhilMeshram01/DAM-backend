@@ -11,6 +11,7 @@ export interface IUser extends Document {
   refreshToken?: string;
   createdAt: Date;
   updatedAt: Date;
+  team: string;
 }
 
 const userSchema = new Schema<IUser>(
@@ -40,6 +41,9 @@ const userSchema = new Schema<IUser>(
       type: String,
       enum: ["admin", "user"],
       default: "user",
+    },
+    team: {
+      type: String,
     },
   },
   { timestamps: true }

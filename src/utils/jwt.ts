@@ -6,6 +6,7 @@ import type { SignOptions } from "jsonwebtoken";
 interface Payload {
   userId: string;
   role?: string;
+  team: string;
 }
 
 export const generateToken = (
@@ -27,7 +28,7 @@ export const verifyToken = (token: string, secret: string): Payload => {
 };
 
 export interface AuthRequest extends Request {
-  user?: { userId: string; role?: string };
+  user?: { userId: string; role?: string; team: string };
   token?: string;
 }
 

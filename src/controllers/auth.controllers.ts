@@ -15,7 +15,7 @@ import { AppError } from "../utils/errorHandler.js";
 
 export const registerUser = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { email, password, name } = req.body;
+    const { email, password, name, team } = req.body;
 
     // Check if email already exists
     const existingUser = await User.findOne({ email });
@@ -28,15 +28,16 @@ export const registerUser = catchAsync(
       name,
       email,
       password,
+      team,
     });
 
     const accessToken = generateToken(
-      { userId: user._id.toString() },
+      { userId: user._id.toString(), team: team, role: "user" },
       JWT_ACCESS_SECRET_KEY,
       JWT_ACCESS_EXPIRES_IN
     );
     const refreshToken = generateToken(
-      { userId: user._id.toString() },
+      { userId: user._id.toString(), team: team, role: "user" },
       JWT_REFRESH_SECRET_KEY,
       JWT_REFRESH_EXPIRES_IN
     );
@@ -91,13 +92,16 @@ export const loginUser = catchAsync(
       return next(new AppError("Invalid email or password.", 401));
     }
 
+    if (!user.role)
+      return next(new AppError("Invalid Request. Please login again", 401));
+
     const accessToken = generateToken(
-      { userId: user._id.toString() },
+      { userId: user._id.toString(), team: user.team, role: user.role },
       JWT_ACCESS_SECRET_KEY,
       JWT_ACCESS_EXPIRES_IN
     );
     const refreshToken = generateToken(
-      { userId: user._id.toString() },
+      { userId: user._id.toString(), team: user.team, role: user.role },
       JWT_REFRESH_SECRET_KEY,
       JWT_REFRESH_EXPIRES_IN
     );
@@ -186,15 +190,18 @@ export const refreshTokenHandler = catchAsync(
       return next(new AppError("Refresh token mismatch", 403));
     }
 
+    if (!user.role)
+      return next(new AppError("Invalid Request. Please login again", 401));
+
     // Generate new tokens
     const newAccessToken = generateToken(
-      { userId: user._id.toString() },
+      { userId: user._id.toString(), team: user.team, role: user.role },
       JWT_ACCESS_SECRET_KEY,
       JWT_ACCESS_EXPIRES_IN
     );
 
     const newRefreshToken = generateToken(
-      { userId: user._id.toString() },
+      { userId: user._id.toString(), team: user.team, role: user.role },
       JWT_REFRESH_SECRET_KEY,
       JWT_REFRESH_EXPIRES_IN
     );

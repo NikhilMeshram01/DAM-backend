@@ -21,6 +21,8 @@ export const registerSchema = z
       .nonempty("Name is required")
       .trim()
       .min(1, "First name cannot be empty"),
+
+    team: z.string().nonempty("team is required"),
   })
   .refine((data) => data.password === data.confirmPassword, {
     path: ["confirmPassword"],

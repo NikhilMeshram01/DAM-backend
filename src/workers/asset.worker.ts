@@ -15,7 +15,8 @@ import {
   generateDocxThumbnail,
 } from "../utils/thumbnailGenerator.js";
 import { MONGODB_URI } from "../configs/configs.js";
-import Analytics from "../models/analytics.model.js";
+import { promisify } from "util";
+import { compressImage, compressVideo } from "../utils/compression.js";
 
 await mongoose.connect(MONGODB_URI);
 console.log("✅ Connected to MongoDB (worker)");
@@ -35,6 +36,34 @@ const assetWorker = new Worker(
 
     // Extract metadata
     const metadata = await extractMetaData(tempPath, asset.mimeType);
+
+    // 3. Compress file if supported
+    let compressedPath = tempPath;
+    let compressedKey = "";
+    const fileExt = path.extname(asset.fileName);
+    const compressedFileName = `compressed-${asset._id}${fileExt}`;
+    const compressedOutputPath = path.join("/tmp", compressedFileName);
+
+    try {
+      if (asset.mimeType.startsWith("image/")) {
+        await compressImage(tempPath, compressedOutputPath);
+        compressedPath = compressedOutputPath;
+      } else if (asset.mimeType.startsWith("video/")) {
+        await compressVideo(tempPath, compressedOutputPath);
+        compressedPath = compressedOutputPath;
+      }
+
+      if (compressedPath !== tempPath && fs.existsSync(compressedPath)) {
+        // Upload compressed file to MinIO
+        compressedKey = `compressed/${compressedFileName}`;
+        const compressedStream = fs.createReadStream(compressedPath);
+        await minioClient.putObject(BUCKET, compressedKey, compressedStream);
+
+        asset.versions.compressed = compressedKey;
+      }
+    } catch (compressionError: any) {
+      console.warn("⚠️ Compression failed:", compressionError.message);
+    }
 
     // Prepare thumbnail generation folder
     const tempThumbDir = path.join("/tmp", "thumbnails");
@@ -98,12 +127,43 @@ const assetWorker = new Worker(
       console.warn("⚠️ Thumbnail generation failed:", err.message);
     }
 
+    // Generate signed URLs (valid for 7 days)
+    // 5. Generate signed URLs
+    const presignedUrl = promisify(minioClient.presignedUrl).bind(minioClient);
+
+    const originalUrl = await presignedUrl(
+      "GET",
+      BUCKET,
+      asset.key,
+      7 * 24 * 60 * 60
+    );
+    const compressedUrl = compressedKey
+      ? await presignedUrl("GET", BUCKET, compressedKey, 7 * 24 * 60 * 60)
+      : "";
+    const thumbnailUrl = asset.versions.thumbnail
+      ? await presignedUrl(
+          "GET",
+          BUCKET,
+          asset.versions.thumbnail,
+          7 * 24 * 60 * 60
+        )
+      : "";
+
+    asset.downloadUrl = {
+      original: originalUrl,
+      thumbnail: thumbnailUrl,
+      compressed: compressedUrl,
+    };
+
     asset.metadata = metadata;
     asset.status = "processed";
     await asset.save();
 
-    // Cleanup temp files
+    // 6. Cleanup
     fs.unlink(tempPath, () => {});
+    if (compressedPath !== tempPath && fs.existsSync(compressedPath)) {
+      fs.unlink(compressedPath, () => {});
+    }
     if (thumbnailPath && fs.existsSync(thumbnailPath)) {
       fs.unlink(thumbnailPath, () => {});
     }
