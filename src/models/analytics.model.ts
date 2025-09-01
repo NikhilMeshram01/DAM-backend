@@ -1,6 +1,4 @@
-import mongoose, { Schema, model, Document, Types } from "mongoose";
-import { number } from "zod";
-import { required } from "zod/mini";
+import { Schema, model, Document } from "mongoose";
 
 export interface IAnalytics extends Document {
   date: Date;

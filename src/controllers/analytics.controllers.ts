@@ -14,15 +14,15 @@
 // import Asset from "../models/asset.model.js"; // Your Asset model
 // import { formatDistanceToNow } from "date-fns"; // Optional, for human-readable time
 
-import User from "../models/auth.model.js";
+import User from "../models/auth.model";
 import type { Request, Response } from "express";
-import { formatDistanceToNow } from "date-fns";
-import Asset from "../models/asset.model.js"; // adjust path
-import catchAsync from "../utils/catchAsync.js"; // adjust path
+import { formatDistanceToNow, startOfToday } from "date-fns";
+import Asset from "../models/asset.model"; // adjust path
+import catchAsync from "../utils/catchAsync"; // adjust path
 // import User from '../models/user.model';
 
 // import { Request, Response } from 'express';
-import { startOfToday } from "date-fns";
+// import {  } from "date-fns";
 // import { formatDistanceToNow } from 'date-fns';
 // import Asset from '../models/asset.model';
 // import User from '../models/user.model';

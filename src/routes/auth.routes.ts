@@ -7,15 +7,15 @@ import {
   // updateProfile,
   refreshTokenHandler,
   // uploadProfilePic,
-} from "../controllers/auth.controllers.js";
+} from "../controllers/auth.controllers";
 // import { authenticateJWT } from "../utils/jwt.js";
-import { validate } from "../middlewares/validate.js";
+import { validate } from "../middlewares/validate";
 import {
   loginSchema,
   registerSchema,
   // updateSchema,
-} from "../validators/auth.validator.js";
-import { loginLimiter } from "../configs/rateLimiter.js";
+} from "../validators/auth.validator";
+import { loginLimiter } from "../configs/rateLimiter";
 // import { upload } from "../configs/upload.js";
 
 const router = express.Router();

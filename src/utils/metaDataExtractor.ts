@@ -3,7 +3,7 @@ import sharp from "sharp";
 import * as mm from "music-metadata";
 import poppler from "pdf-poppler";
 // import Ffmpeg from "fluent-ffmpeg";
-import textract from "textract";
+// import textract from "textract";
 import path from "path";
 
 import ffmpeg from "fluent-ffmpeg";
@@ -210,10 +210,10 @@ const extractText = async (
   mimeType: string
 ): Promise<string> => {
   return new Promise((resolve, reject) => {
-    textract.fromFileWithMimeAndPath(mimeType, filePath, (err, text) => {
-      if (err) reject(err);
-      resolve(text || "");
-    });
+    // textract.fromFileWithMimeAndPath(mimeType, filePath, (err, text) => {
+    //   if (err) reject(err);
+    //   resolve(text || "");
+    // });
   });
 };
 

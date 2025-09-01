@@ -1,13 +1,13 @@
 import express from "express";
-import { authenticateJWT } from "../utils/jwt.js";
+import { authenticateJWT } from "../utils/jwt";
 import {
   deleteAsset,
   getAsset,
   getAssetDownloadUrl,
   getAssets,
   // searchAssets,
-} from "../controllers/asset.controllers.js";
-import { authorizeUploaderOrAdmin } from "../middlewares/authorizeUploaderOrAdmin.js";
+} from "../controllers/asset.controllers";
+import { authorizeUploaderOrAdmin } from "../middlewares/authorizeUploaderOrAdmin";
 
 const router = express.Router();
 

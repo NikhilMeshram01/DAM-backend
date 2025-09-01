@@ -3,20 +3,20 @@ import mongoose from "mongoose";
 import fs from "fs";
 import path from "path";
 import { Worker } from "bullmq";
-import redis from "../configs/redis.js";
-import Asset from "../models/asset.model.js";
-import minioClient, { BUCKET } from "../configs/minio.js";
-import { saveStreamToTempFile } from "../utils/saveStreamToTempFile.js";
-import { extractMetaData } from "../utils/metaDataExtractor.js";
+import redis from "../configs/redis";
+import Asset from "../models/asset.model";
+import minioClient, { BUCKET } from "../configs/minio";
+import { saveStreamToTempFile } from "../utils/saveStreamToTempFile";
+import { extractMetaData } from "../utils/metaDataExtractor";
 import {
   generateVideoThumbnail,
   generatePdfThumbnail,
   generateTextThumbnail,
   generateDocxThumbnail,
-} from "../utils/thumbnailGenerator.js";
-import { MONGODB_URI } from "../configs/configs.js";
+} from "../utils/thumbnailGenerator";
+import { MONGODB_URI } from "../configs/configs";
 import { promisify } from "util";
-import { compressImage, compressVideo } from "../utils/compression.js";
+import { compressImage, compressVideo } from "../utils/compression";
 
 await mongoose.connect(MONGODB_URI);
 console.log("✅ Connected to MongoDB (worker)");

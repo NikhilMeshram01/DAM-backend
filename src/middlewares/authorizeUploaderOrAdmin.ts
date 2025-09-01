@@ -66,8 +66,8 @@
 // };
 
 import type { Request, Response, NextFunction } from "express";
-import Asset from "../models/asset.model.js";
-import { AppError } from "../utils/errorHandler.js";
+import Asset from "../models/asset.model";
+import { AppError } from "../utils/errorHandler";
 
 export const authorizeUploaderOrAdmin = async (
   req: Request,

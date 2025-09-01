@@ -1,7 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
-import catchAsync from "../utils/catchAsync.js";
-import { AppError } from "../utils/errorHandler.js";
-import Asset from "../models/asset.model.js";
+import catchAsync from "../utils/catchAsync";
+import { AppError } from "../utils/errorHandler";
+import Asset from "../models/asset.model";
 
 // Utility: Build Mongoose query filters
 const buildAssetQuery = (query: any, userTeam: string, isAdmin: boolean) => {

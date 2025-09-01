@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from "express";
-import { AppError } from "../utils/errorHandler.js";
+import { AppError } from "../utils/errorHandler";
 
 // Usage: authorizeRole("admin") or authorizeRole("admin", "editor")
 export const authorizeRole = (...allowedRoles: string[]) => {

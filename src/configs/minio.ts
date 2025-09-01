@@ -6,7 +6,7 @@ import {
   MINIO_PORT,
   MINIO_SECRET_KEY,
   MINIO_USE_SSL,
-} from "./configs.js";
+} from "./configs";
 
 const minioClient = new Client({
   endPoint: MINIO_ENDPOINT,

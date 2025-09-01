@@ -1,11 +1,12 @@
 import type { Request, Response, NextFunction } from "express";
 import { v4 as uuidv4 } from "uuid";
 import path from "path";
-import Asset from "../models/asset.model.js";
-import { enqueueProcessingJob } from "../queue/queue.js"; // or general asset processing queue
-import minioClient, { BUCKET } from "../configs/minio.js";
-import catchAsync from "../utils/catchAsync.js";
-import { AppError } from "../utils/errorHandler.js";
+import Asset from "../models/asset.model";
+import { enqueueProcessingJob } from "../queue/queue"; // or general asset processing queue
+import minioClient, { BUCKET } from "../configs/minio";
+import catchAsync from "../utils/catchAsync";
+import { AppError } from "../utils/errorHandler";
+import mongoose from "mongoose";
 
 // Generate a presigned PUT URL for direct upload to MinIO
 export const generatePresignedUrl = catchAsync(
@@ -43,11 +44,17 @@ export const confirmUpload = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       console.log("confirmUpload hit");
+      if (!req.user) {
+        return next(new AppError("Unauthorized", 401));
+        // return res.status(401).json({ message: "Unauthorized" });
+      }
       const { key, fileName, originalName, mimeType, size, tags, category } =
         req.body;
       const user = req.user?.userId; // assuming `isAuthenticated` adds `user` to req
-      if (!key || !fileName || !mimeType || !size) {
-        return res.status(400).json({ message: "Missing required fields" });
+      if (!key || !fileName || !mimeType || !size || !originalName || !tags) {
+        // return next(new AppError("Missing required fields", 400));
+        return next(new AppError(`Missing field: fileName`, 400));
+        // return res.status(400).json({ message: "Missing required fields" });
       }
 
       // Create asset record in DB
@@ -57,10 +64,10 @@ export const confirmUpload = catchAsync(
         team: req.user?.team,
         originalName,
         mimeType,
-        size,
+        size: Number(size),
         tags: tags || [],
         category: category || "other",
-        uploader: req.user?.userId || "system",
+        uploader: new mongoose.Types.ObjectId(req.user?.userId) || "system",
         status: "pending",
         bucket: process.env.MINIO_BUCKET_NAME || "assets",
         path: key, // you can store the key as path or generate another if needed

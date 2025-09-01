@@ -1,8 +1,8 @@
 import express from "express";
 
-import { authenticateJWT } from "../utils/jwt.js";
-import { authorizeUploaderOrAdmin } from "../middlewares/authorizeUploaderOrAdmin.js";
-import { getAdminDashboardStats } from "../controllers/analytics.controllers.js";
+import { authenticateJWT } from "../utils/jwt";
+import { authorizeUploaderOrAdmin } from "../middlewares/authorizeUploaderOrAdmin";
+import { getAdminDashboardStats } from "../controllers/analytics.controllers";
 
 const router = express.Router();
 

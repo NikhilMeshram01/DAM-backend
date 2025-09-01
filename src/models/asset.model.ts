@@ -22,12 +22,12 @@ export interface IAsset extends Document {
     "720"?: string;
     preview?: string;
     waveform?: string;
-    compressed: string;
+    compressed?: string;
   };
   downloadUrl: {
-    thumbnail: string;
-    original: string;
-    compressed: string;
+    thumbnail?: string;
+    original?: string;
+    compressed?: string;
   };
   tags: string[];
   metadata: Record<string, any>;
@@ -65,9 +65,9 @@ const AssetSchema: Schema = new Schema(
       compressed: String,
     },
     downloadUrl: {
-      original: String,
-      thumbnail: String,
-      compressed: String,
+      original: { type: String, default: "" },
+      thumbnail: { type: String, default: "" },
+      compressed: { type: String, default: "" },
     },
     tags: [{ type: String }],
     metadata: { type: Schema.Types.Mixed, default: {} },

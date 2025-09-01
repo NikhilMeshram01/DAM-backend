@@ -1,6 +1,6 @@
 import { ZodError, ZodObject, type ZodRawShape } from "zod";
 import type { Request, Response, NextFunction } from "express";
-import { AppError } from "../utils/errorHandler.js";
+import { AppError } from "../utils/errorHandler";
 
 // ZodError : For catching and handling schema validation errors.
 // ZodObject<ZodRawShape>:

@@ -1,5 +1,5 @@
 import type { NextFunction, Request, Response } from "express";
-import { NODE_ENV } from "../configs/configs.js";
+import { NODE_ENV } from "../configs/configs";
 
 export class AppError extends Error {
   statusCode: number;

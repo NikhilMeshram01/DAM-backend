@@ -1,6 +1,6 @@
 // queues/queue.ts
 import { Queue } from "bullmq";
-import redis from "../configs/redis.js";
+import redis from "../configs/redis";
 
 export const queue = new Queue("storage-processing", {
   connection: redis,

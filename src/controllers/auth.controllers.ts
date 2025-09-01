@@ -1,7 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
-import User from "../models/auth.model.js";
-import { generateToken } from "../utils/jwt.js";
+import User from "../models/auth.model";
+import { generateToken } from "../utils/jwt";
 import bcrypt from "bcryptjs";
 import {
   JWT_ACCESS_EXPIRES_IN,
@@ -9,19 +9,36 @@ import {
   JWT_REFRESH_EXPIRES_IN,
   JWT_REFRESH_SECRET_KEY,
   NODE_ENV,
-} from "../configs/configs.js";
-import catchAsync from "../utils/catchAsync.js";
-import { AppError } from "../utils/errorHandler.js";
+} from "../configs/configs";
+import catchAsync from "../utils/catchAsync";
+import { AppError } from "../utils/errorHandler";
 
 export const registerUser = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { email, password, name, team } = req.body;
+    const { email, password, confirmPassword, name, team } = req.body;
+    // Validate required fields (if not using middleware)
+    if (!email || !password || !name || !team || !confirmPassword) {
+      console.log("Missing required fields");
+      return next(new AppError("Missing required fields", 400));
+    }
+
+    // if (password !== confirmPassword) {
+    //   return next(new AppError("Password not matching", 400));
+    // }
 
     // Check if email already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return next(new AppError("Email already in use.", 409));
     }
+    // try {
+    //   const existingUser = await User.findOne({ email });
+    //   if (existingUser) {
+    //     return next(new AppError("Email already in use.", 409));
+    //   }
+    // } catch (err) {
+    //   return next(new AppError("Database query failed", 500));
+    // }
 
     // Create new user
     const user = new User({
@@ -79,22 +96,29 @@ export const registerUser = catchAsync(
 export const loginUser = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { email, password } = req.body;
-
+    console.log("1");
     const user = await User.findOne({ email }).select("+password");
 
+    console.log("Login attempt with email:", email);
+
+    console.log("2");
     if (!user) {
       return next(new AppError("Invalid email or password.", 401));
     }
 
+    console.log("3");
     const isMatch = await bcrypt.compare(password, user.password);
 
+    console.log("4");
     if (!isMatch) {
       return next(new AppError("Invalid email or password.", 401));
     }
 
+    console.log("5");
     if (!user.role)
       return next(new AppError("Invalid Request. Please login again", 401));
 
+    console.log("6");
     const accessToken = generateToken(
       { userId: user._id.toString(), team: user.team, role: user.role },
       JWT_ACCESS_SECRET_KEY,
@@ -106,13 +130,17 @@ export const loginUser = catchAsync(
       JWT_REFRESH_EXPIRES_IN
     );
 
+    console.log("7");
     if (!refreshToken || !accessToken)
       return next(new AppError("Missing authentication tokens.", 401));
 
+    console.log("8");
     user.refreshToken = refreshToken;
 
+    console.log("9");
     await user.save();
 
+    console.log("10");
     // Set token in HTTP-only cookie
     const isProduction = NODE_ENV === "production";
     res.cookie("token", accessToken, {
@@ -128,9 +156,11 @@ export const loginUser = catchAsync(
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
+    console.log("11");
     // Optionally exclude sensitive fields
     const { password: _, ...userData } = user.toObject();
 
+    console.log("12");
     res.status(200).json({
       success: true,
       message: "Login successful",

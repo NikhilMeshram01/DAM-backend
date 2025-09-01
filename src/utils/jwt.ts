@@ -1,6 +1,6 @@
 import jwt from "jsonwebtoken";
 import type { Request, Response, NextFunction } from "express";
-import { JWT_ACCESS_SECRET_KEY } from "../configs/configs.js";
+import { JWT_ACCESS_SECRET_KEY } from "../configs/configs";
 import type { SignOptions } from "jsonwebtoken";
 
 interface Payload {
