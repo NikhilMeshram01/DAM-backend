@@ -1,364 +1,472 @@
-// import request from "supertest";
-// import app from "../../src/app"; // Express app
-// import User from "../../src/models/auth.model";
-// import bcrypt from "bcryptjs";
-// import jwt from "jsonwebtoken";
-// import { generateToken } from "../../src/utils/jwt";
-// import { AppError } from "../../src/utils/errorHandler";
-// import { jest } from "@jest/globals";
+// Mock everything first - SINGLE VERSION OF EACH MOCK
+jest.mock('jsonwebtoken', () => ({
+    verify: jest.fn(),
+    sign: jest.fn().mockImplementation((payload, secret) => {
+        return `mock-token-${payload.userId}`;
+    }),
+}));
 
-// // Mock dependencies
-// jest.mock("../../src/models/auth.model");
-// jest.mock("bcryptjs");
-// jest.mock("jsonwebtoken");
-// jest.mock("../../src/utils/jwt");
-
-// // Setup mock user
-// const mockUser = {
-//   _id: "user123",
-//   name: "Test User",
-//   email: "test@example.com",
-//   password: "hashedPassword",
-//   team: "Team A",
-//   role: "user",
-//   refreshToken: "mockRefreshToken",
-//   save: jest.fn().mockResolvedValue(true),
-
-//   toObject: () => ({
-//     _id: "user123",
-//     name: "Test User",
-//     email: "test@example.com",
-//     team: "Team A",
-//     role: "user",
-//   }),
-// };
-
-// describe("Auth Controller", () => {
-//   beforeEach(() => {
-//     jest.clearAllMocks();
-//   });
-//   jest.mock("../../src/models/auth.model", () => {
-//     const actual = jest.requireActual("../../src/models/auth.model");
-//     return {
-//       __esModule: true,
-//       default: {
-//         ...actual,
-//         findOne: jest.fn(),
-//         findById: jest.fn(),
-//         updateOne: jest.fn(),
-//       },
-//     };
-//   });
-
-//   describe("registerUser", () => {
-//     it("should return 400 if required fields are missing", async () => {
-//       const res = await request(app).post("/api/v1/users/register").send({}); // Missing all fields
-//       expect(res.status).toBe(400);
-//       expect(res.body.message).toBe("Missing required fields");
-//     });
-
-//     it("should return 400 if passwords do not match", async () => {
-//       const res = await request(app).post("/api/v1/users/register").send({
-//         email: "test@example.com",
-//         password: "123456",
-//         confirmPassword: "wrongpassword",
-//         name: "Test",
-//         team: "Team A",
-//       });
-//       expect(res.status).toBe(400);
-//       expect(res.body.message).toBe("Password not matching");
-//     });
-
-//     it("should return 409 if email already exists", async () => {
-//       (User as any).mockResolvedValue(mockUser);
-//       const res = await request(app).post("/api/v1/users/register").send({
-//         email: "test@example.com",
-//         password: "123456",
-//         confirmPassword: "123456",
-//         name: "Test",
-//         team: "Team A",
-//       });
-//       expect(res.status).toBe(409);
-//       expect(res.body.message).toBe("Email already in use.");
-//     });
-
-//     it("should register user and return tokens", async () => {
-//       (User.findOne as jest.Mock).mockResolvedValue(null);
-//       (generateToken as jest.Mock).mockReturnValue("mockToken");
-//       (User as any).mockImplementation(() => mockUser);
-
-//       const res = await request(app).post("/api/v1/users/register").send({
-//         email: "test@example.com",
-//         password: "123456",
-//         confirmPassword: "123456",
-//         name: "Test",
-//         team: "Team A",
-//       });
-
-//       expect(res.status).toBe(201);
-//       expect(res.body.success).toBe(true);
-//       expect(res.body.data.email).toBe("test@example.com");
-//       expect(res.headers["set-cookie"]).toBeDefined();
-//     });
-//   });
-// });
-
-// ✅ MOCK FIRST — BEFORE imports
 jest.mock("../../src/models/auth.model", () => {
-  const mockUserConstructor = jest.fn();
+    const mockSave = jest.fn().mockImplementation(function (this: any) {
+        if (!this._id) {
+            this._id = 'mock-user-id-123';
+        }
+        return Promise.resolve(this);
+    });
 
-  mockUserConstructor.findOne = jest.fn();
-  mockUserConstructor.findById = jest.fn();
-  mockUserConstructor.updateOne = jest.fn();
+    const mockFindOne = jest.fn();
+    const mockFindById = jest.fn();
+    const mockUpdateOne = jest.fn();
 
-  return {
-    __esModule: true,
-    default: mockUserConstructor,
-  };
+    const MockUser = function (this: any, data: any) {
+        this._id = data?._id || 'mock-user-id-123';
+        this.email = data?.email;
+        this.password = data?.password;
+        this.name = data?.name;
+        this.team = data?.team;
+        this.role = data?.role || 'user';
+        this.refreshToken = data?.refreshToken;
+        this.save = mockSave;
+        this.toObject = () => {
+            const obj = { ...this };
+            delete obj.password;
+            delete obj.save;
+            return obj;
+        };
+        this.comparePassword = jest.fn().mockResolvedValue(true);
+    };
+
+    MockUser.findOne = mockFindOne;
+    MockUser.findById = mockFindById;
+    MockUser.updateOne = mockUpdateOne;
+
+    return MockUser;
 });
 
-jest.mock("../../src/utils/jwt", () => ({
-  __esModule: true,
-  generateToken: jest.fn(),
+jest.mock("bcryptjs", () => ({
+    compare: jest.fn().mockResolvedValue(true),
+    hash: jest.fn().mockResolvedValue("hashedPassword"),
 }));
 
+jest.mock("../../src/utils/jwt", () => ({
+    generateToken: jest.fn().mockReturnValue("mockToken"),
+}));
+
+jest.mock("../../src/configs/configs", () => ({
+    getEnvVar: (key: string) => {
+        const envVars: { [key: string]: string } = {
+            CLIENT_URL: 'http://localhost:3000',
+            JWT_SECRET: 'test-jwt-secret',
+            JWT_REFRESH_SECRET: 'test-refresh-secret',
+            ACCESS_TOKEN_EXPIRES_IN: '15m',
+            REFRESH_TOKEN_EXPIRES_IN: '7d',
+            NODE_ENV: 'test',
+        };
+        return envVars[key] || 'test-value';
+    },
+    JWT_ACCESS_SECRET_KEY: 'test-access-secret',
+    JWT_REFRESH_SECRET_KEY: 'test-refresh-secret',
+    JWT_ACCESS_EXPIRES_IN: '15m',
+    JWT_REFRESH_EXPIRES_IN: '7d',
+    NODE_ENV: 'test',
+}));
+
+// Now import
 import request from "supertest";
-import app from "../../src/app";
+import testApp from "../test-app-setup";
 import User from "../../src/models/auth.model";
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
 import { generateToken } from "../../src/utils/jwt";
-import { jest } from "@jest/globals";
+import jwt from 'jsonwebtoken'; // Import jwt for spyOn
 
-jest.mock("bcryptjs", () => ({
-  compare: jest.fn(),
-  hash: jest.fn(),
-}));
-jest.mock("jsonwebtoken", () => ({
-  __esModule: true,
-  sign: jest.fn(),
-  verify: jest.fn(),
-}));
-jest.mock("../../src/utils/jwt", () => ({
-  __esModule: true,
-  generateToken: jest.fn(),
-}));
-
-// ✅ mock user object
-const mockUser = {
-  _id: "user123",
-  name: "Test User",
-  email: "test@example.com",
-  password: "hashedPassword",
-  team: "Team A",
-  role: "user",
-  refreshToken: "mockRefreshToken",
-  save: jest.fn().mockResolvedValue(true),
-  toObject: () => ({
-    _id: "user123",
-    name: "Test User",
-    email: "test@example.com",
-    team: "Team A",
-    role: "user",
-  }),
+const mockedUser = User as jest.Mocked<typeof User> & {
+    findOne: jest.Mock;
+    findById: jest.Mock;
+    updateOne: jest.Mock;
 };
 
-// import User from "../../src/models/auth.model";
+const mockedBcrypt = bcrypt as jest.Mocked<typeof bcrypt>;
+const mockedGenerateToken = generateToken as jest.Mock;
+const mockedJwt = jwt as jest.Mocked<typeof jwt>;
 
-// const mockedUser = User as jest.Mock & {
-//   findOne: jest.Mock;
-//   findById: jest.Mock;
-//   updateOne: jest.Mock;
-// };
-// const mockedUser = User as jest.Mocked<typeof User>;
-
-describe("Auth Controller", () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
-  describe("registerUser", () => {
-    // it("should return 400 if required fields are missing", async () => {
-    //   const res = await request(app).post("/api/v1/users/register").send({});
-    //   expect(res.status).toBe(400);
-    //   expect(res.body.message).toContain("Validation error:");
-    //   expect(res.body.message).toContain("email: Invalid input");
-    // });
-
-    // it("should return 400 if passwords do not match", async () => {
-    //   const res = await request(app).post("/api/v1/users/register").send({
-    //     email: "test@example.com",
-    //     password: "123456",
-    //     confirmPassword: "wrongpassword",
-    //     name: "Test",
-    //     team: "Team A",
-    //   });
-    //   expect(res.status).toBe(400);
-    //   expect(res.body.message).toBe(
-    //     "Validation error: confirmPassword: Passwords do not match"
-    //   );
-    // });
-
-    // it("should return 409 if email already exists", async () => {
-    //   // issues here
-    //   mockedUser.findOne.mockResolvedValue(mockUser);
-
-    //   const res = await request(app).post("/api/v1/users/register").send({
-    //     email: "test@example.com",
-    //     password: "123456",
-    //     confirmPassword: "123456",
-    //     name: "Test",
-    //     team: "Team A",
-    //   });
-
-    //   expect(res.status).toBe(409);
-    //   expect(res.body.message).toBe("Email already in use.");
-    // });
-
-    it("should register user and return tokens", async () => {
-      const mockedUser = User as jest.Mocked<typeof User>;
-
-      mockedUser.findOne.mockResolvedValue(null);
-      mockedUser.mockImplementation(() => ({
-        save: jest.fn().mockResolvedValue(true),
-        toObject: () => ({
-          _id: "user123",
-          name: "Test User",
-          email: "test@example.com",
-          team: "Team A",
-          role: "user",
-        }),
-      }));
-
-      console.log("User.findOne:", User.findOne);
-      console.log("Is mock fn?", jest.isMockFunction(User.findOne));
-
-      const res = await request(app).post("/api/v1/users/register").send({
-        email: "test@example.com",
-        password: "123456",
-        confirmPassword: "123456",
-        name: "Test",
-        team: "Team A",
-      });
-
-      expect(res.status).toBe(201);
-      expect(res.body.success).toBe(true);
-      expect(res.body.data.email).toBe("test@example.com");
-      expect(res.headers["set-cookie"]).toBeDefined();
+describe("Auth Controller - Unit Tests", () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
     });
-  });
 
-  //   describe("loginUser", () => {
-  //     it("should return 401 if user not found", async () => {
-  //       (User.findOne as jest.Mock).mockReturnValue({
-  //         select: jest.fn().mockResolvedValue(null),
-  //       });
+    // KEEP YOUR ORIGINAL 3 WORKING TESTS
+    it("should register a new user successfully", async () => {
+        mockedUser.findOne.mockResolvedValue(null);
+        mockedBcrypt.hash.mockResolvedValue("hashedPassword" as never);
 
-  //       const res = await request(app).post("/api/v1/users/login").send({
-  //         email: "test@example.com",
-  //         password: "123456",
-  //       });
+        const response = await request(testApp)
+            .post("/api/v1/users/register")
+            .send({
+                email: "test@example.com",
+                password: "123456",
+                confirmPassword: "123456",
+                name: "Test User",
+                team: "Team A",
+            });
 
-  //       expect(res.status).toBe(401);
-  //       expect(res.body.message).toBe("Invalid email or password.");
-  //     });
+        expect(response.status).toBe(201);
+        expect(response.body.success).toBe(true);
+        expect(mockedUser.findOne).toHaveBeenCalledWith({ email: "test@example.com" });
+    });
 
-  //     it("should return 401 if password does not match", async () => {
-  //       (User.findOne as jest.Mock).mockReturnValue({
-  //         select: jest.fn().mockResolvedValue(mockUser),
-  //       });
-  //       (bcrypt.compare as jest.Mock).mockResolvedValue(false);
+    it("should return error when email already exists", async () => {
+        mockedUser.findOne.mockResolvedValue({
+            email: "test@example.com",
+            name: "Existing User",
+            team: "Team A",
+        });
 
-  //       const res = await request(app).post("/api/v1/users/login").send({
-  //         email: "test@example.com",
-  //         password: "wrongpass",
-  //       });
+        const response = await request(testApp)
+            .post("/api/v1/users/register")
+            .send({
+                email: "test@example.com",
+                password: "123456",
+                confirmPassword: "123456",
+                name: "Test User",
+                team: "Team A",
+            });
 
-  //       expect(res.status).toBe(401);
-  //       expect(res.body.message).toBe("Invalid email or password.");
-  //     });
+        expect(response.status).toBe(409);
+        expect(response.body.message).toContain("Email already in use");
+    });
 
-  //     it("should login and return tokens", async () => {
-  //       (User.findOne as jest.Mock).mockReturnValue({
-  //         select: jest.fn().mockResolvedValue(mockUser),
-  //       });
-  //       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
-  //       (generateToken as jest.Mock).mockReturnValue("mockToken");
+    it("should login user successfully", async () => {
+        mockedUser.findOne.mockReturnValue({
+            select: jest.fn().mockResolvedValue({
+                _id: "user123",
+                email: "test@example.com",
+                password: "hashedPassword",
+                name: "Test User",
+                team: "Team A",
+                role: "user",
+                comparePassword: jest.fn().mockResolvedValue(true),
+                save: jest.fn().mockResolvedValue(true),
+                toObject: () => ({
+                    _id: "user123",
+                    email: "test@example.com",
+                    name: "Test User",
+                    team: "Team A",
+                    role: "user",
+                }),
+            }),
+        });
 
-  //       const res = await request(app).post("/api/v1/users/login").send({
-  //         email: "test@example.com",
-  //         password: "123456",
-  //       });
+        mockedBcrypt.compare.mockResolvedValue(true as never);
 
-  //       expect(res.status).toBe(200);
-  //       expect(res.body.message).toBe("Login successful");
-  //       expect(res.body.data.email).toBe("test@example.com");
-  //       expect(res.headers["set-cookie"]).toBeDefined();
-  //     });
-  //   });
+        const response = await request(testApp)
+            .post("/api/v1/users/login")
+            .send({
+                email: "test@example.com",
+                password: "123456",
+            });
 
-  //   describe("logoutUser", () => {
-  //     it("should clear cookies and logout successfully", async () => {
-  //       (User.findOne as jest.Mock).mockResolvedValue(mockUser);
-  //       (User.updateOne as jest.Mock).mockResolvedValue({});
+        expect(response.status).toBe(200);
+        expect(response.body.message).toBe("Login successful");
+    });
+})
+// ADD THE NEW TESTS
+describe("Registration Edge Cases", () => {
+    it("should return 400 if required fields are missing", async () => {
+        const response = await request(testApp)
+            .post("/api/v1/users/register")
+            .send({
+                email: "test@example.com",
+                // missing password, confirmPassword, name, team
+            });
 
-  //       const res = await request(app)
-  //         .post("/api/v1/users/logout")
-  //         .set("Cookie", ["refreshToken=mockRefreshToken"]);
+        expect(response.status).toBe(400);
+        // Zod validation catches this first
+        expect(response.body.message).toContain("Validation error");
+        expect(response.body.message).toContain("password: Invalid input");
+        expect(response.body.message).toContain("name: Invalid input");
+    });
 
-  //       expect(res.status).toBe(200);
-  //       expect(res.body.message).toBe("Logged out successfully");
-  //     });
-  //   });
+    it("should handle database errors during registration", async () => {
+        mockedUser.findOne.mockRejectedValue(new Error("Database connection failed"));
 
-  //   describe("refreshTokenHandler", () => {
-  //     it("should return 401 if refresh token is missing", async () => {
-  //       const res = await request(app).post("/api/v1/users/refresh-token");
+        const response = await request(testApp)
+            .post("/api/v1/users/register")
+            .send({
+                email: "test@example.com",
+                password: "123456",
+                confirmPassword: "123456",
+                name: "Test User",
+                team: "Team A",
+            });
 
-  //       expect(res.status).toBe(401);
-  //       expect(res.body.message).toBe("Refresh token missing");
-  //     });
+        expect(response.status).toBe(500);
+    });
+});
 
-  //     it("should return 403 if token is invalid", async () => {
-  //       (jwt.verify as jest.Mock).mockImplementation(() => {
-  //         throw new Error("Invalid token");
-  //       });
+describe("Login Edge Cases", () => {
+    it("should return 401 if user is not found", async () => {
+        mockedUser.findOne.mockReturnValue({
+            select: jest.fn().mockResolvedValue(null),
+        });
 
-  //       const res = await request(app)
-  //         .post("/api/v1/users/refresh-token")
-  //         .set("Cookie", ["refreshToken=invalid"]);
+        const response = await request(testApp)
+            .post("/api/v1/users/login")
+            .send({
+                email: "nonexistent@example.com",
+                password: "123456",
+            });
 
-  //       expect(res.status).toBe(403);
-  //       expect(res.body.message).toBe("Invalid or expired refresh token");
-  //     });
+        expect(response.status).toBe(401);
+        expect(response.body.message).toBe("Invalid email or password.");
+    });
 
-  //     it("should return 403 if refresh token mismatch", async () => {
-  //       (jwt.verify as jest.Mock).mockReturnValue({ userId: "user123" });
-  //       (User.findById as jest.Mock).mockResolvedValue({
-  //         ...mockUser,
-  //         refreshToken: "differentToken",
-  //       });
+    it("should return 401 if password is incorrect", async () => {
+        // Mock user found with password
+        const mockUser = {
+            _id: "user123",
+            email: "test@example.com",
+            password: "hashedPassword",
+            name: "Test User",
+            team: "Team A",
+            role: "user",
+            save: jest.fn().mockResolvedValue(true),
+            toObject: () => ({
+                _id: "user123",
+                email: "test@example.com",
+                name: "Test User",
+                team: "Team A",
+                role: "user",
+            }),
+        };
 
-  //       const res = await request(app)
-  //         .post("/api/v1/users/refresh-token")
-  //         .set("Cookie", ["refreshToken=wrongToken"]);
+        mockedUser.findOne.mockReturnValue({
+            select: jest.fn().mockResolvedValue(mockUser),
+        });
 
-  //       expect(res.status).toBe(403);
-  //       expect(res.body.message).toBe("Refresh token mismatch");
-  //     });
+        // Mock bcrypt.compare to return false (incorrect password)
+        mockedBcrypt.compare.mockResolvedValue(false as never);
 
-  //     it("should refresh token successfully", async () => {
-  //       (jwt.verify as jest.Mock).mockReturnValue({ userId: "user123" });
-  //       (User.findById as jest.Mock).mockResolvedValue(mockUser);
-  //       (generateToken as jest.Mock).mockReturnValue("newAccessToken");
+        const response = await request(testApp)
+            .post("/api/v1/users/login")
+            .send({
+                email: "test@example.com",
+                password: "wrongpassword",
+            });
 
-  //       const res = await request(app)
-  //         .post("/api/v1/users/refresh-token")
-  //         .set("Cookie", ["refreshToken=mockRefreshToken"]);
+        expect(response.status).toBe(401);
+        expect(response.body.message).toBe("Invalid email or password.");
+    });
 
-  //       expect(res.status).toBe(200);
-  //       expect(res.body.message).toBe("Token refreshed successfully");
-  //       expect(res.body.token).toBe("newAccessToken");
-  //     });
-  //   });
+    it("should return 401 if user has no role", async () => {
+        // Mock user found with password but no role
+        const mockUser = {
+            _id: "user123",
+            email: "test@example.com",
+            password: "hashedPassword",
+            name: "Test User",
+            team: "Team A",
+            // no role defined
+            save: jest.fn().mockResolvedValue(true),
+            toObject: () => ({
+                _id: "user123",
+                email: "test@example.com",
+                name: "Test User",
+                team: "Team A",
+                // no role in toObject either
+            }),
+        };
+
+        mockedUser.findOne.mockReturnValue({
+            select: jest.fn().mockResolvedValue(mockUser),
+        });
+
+        // Mock bcrypt.compare to return true (password is correct)
+        mockedBcrypt.compare.mockResolvedValue(true as never);
+
+        const response = await request(testApp)
+            .post("/api/v1/users/login")
+            .send({
+                email: "test@example.com",
+                password: "123456", // correct password
+            });
+
+        expect(response.status).toBe(401);
+        expect(response.body.message).toBe("Invalid Request. Please login again");
+    });
+});
+
+describe("Login Edge Cases", () => {
+    it("should return 401 if user is not found", async () => {
+        mockedUser.findOne.mockReturnValue({
+            select: jest.fn().mockResolvedValue(null),
+        });
+
+        const response = await request(testApp)
+            .post("/api/v1/users/login")
+            .send({
+                email: "nonexistent@example.com",
+                password: "123456",
+            });
+
+        expect(response.status).toBe(401);
+        expect(response.body.message).toBe("Invalid email or password.");
+    });
+
+    it("should return 401 if password is incorrect", async () => {
+        // Mock user found with password
+        const mockUser = {
+            _id: "user123",
+            email: "test@example.com",
+            password: "hashedPassword",
+            name: "Test User",
+            team: "Team A",
+            role: "user",
+            save: jest.fn().mockResolvedValue(true),
+            toObject: () => ({
+                _id: "user123",
+                email: "test@example.com",
+                name: "Test User",
+                team: "Team A",
+                role: "user",
+            }),
+        };
+
+        mockedUser.findOne.mockReturnValue({
+            select: jest.fn().mockResolvedValue(mockUser),
+        });
+
+        // Mock bcrypt.compare to return false (incorrect password)
+        mockedBcrypt.compare.mockResolvedValue(false as never);
+
+        const response = await request(testApp)
+            .post("/api/v1/users/login")
+            .send({
+                email: "test@example.com",
+                password: "wrongpassword",
+            });
+
+        console.log('Response status:', response.status);
+        console.log('Response body:', JSON.stringify(response.body, null, 2));
+        console.log('bcrypt.compare calls:', mockedBcrypt.compare.mock.calls);
+
+        expect(response.status).toBe(401);
+        expect(response.body.message).toBe("Invalid email or password.");
+    });
+
+    describe("Logout", () => {
+        it("should logout user successfully with refresh token", async () => {
+            const mockUser = {
+                refreshToken: "valid-refresh-token",
+                save: jest.fn().mockResolvedValue(true),
+            };
+
+            mockedUser.findOne.mockResolvedValue(mockUser);
+            mockedUser.updateOne.mockResolvedValue({});
+
+            const response = await request(testApp)
+                .post("/api/v1/users/logout")
+                .set('Cookie', ['refreshToken=valid-refresh-token']);
+
+            expect(response.status).toBe(200);
+            expect(response.body.message).toBe("Logged out successfully");
+        });
+
+        it("should logout user successfully without refresh token", async () => {
+            mockedUser.findOne.mockResolvedValue(null);
+
+            const response = await request(testApp)
+                .post("/api/v1/users/logout")
+                .set('Cookie', []);
+
+            expect(response.status).toBe(200);
+            expect(response.body.message).toBe("Logged out successfully");
+        });
+    });
+
+    describe("Refresh Token", () => {
+        it("should return 401 if refresh token is missing", async () => {
+            const response = await request(testApp)
+                .post("/api/v1/users/refresh-token")
+                .set('Cookie', []);
+
+            expect(response.status).toBe(401);
+            expect(response.body.message).toBe("Refresh token missing");
+        });
+
+        it("should return 403 if refresh token is invalid", async () => {
+            mockedJwt.verify.mockImplementation(() => {
+                throw new Error('Invalid token');
+            });
+
+            const response = await request(testApp)
+                .post("/api/v1/users/refresh-token")
+                .set('Cookie', ['refreshToken=invalid-token']);
+
+            expect(response.status).toBe(403);
+            expect(response.body.message).toBe("Invalid or expired refresh token");
+        });
+
+        it("should return 403 if refresh token mismatch", async () => {
+            mockedJwt.verify.mockReturnValue({ userId: "user123" } as any);
+
+            mockedUser.findById.mockResolvedValue({
+                _id: "user123",
+                refreshToken: "different-token",
+            });
+
+            const response = await request(testApp)
+                .post("/api/v1/users/refresh-token")
+                .set('Cookie', ['refreshToken=wrong-token']);
+
+            expect(response.status).toBe(403);
+            expect(response.body.message).toBe("Refresh token mismatch");
+        });
+
+        it("should refresh token successfully", async () => {
+            mockedJwt.verify.mockReturnValue({ userId: "user123" } as any);
+
+            const mockUser = {
+                _id: "user123",
+                refreshToken: "valid-token",
+                team: "Team A",
+                role: "user",
+                save: jest.fn().mockResolvedValue(true),
+            };
+
+            mockedUser.findById.mockResolvedValue(mockUser);
+
+            const response = await request(testApp)
+                .post("/api/v1/users/refresh-token")
+                .set('Cookie', ['refreshToken=valid-token']);
+
+            expect(response.status).toBe(200);
+            expect(response.body.message).toBe("Token refreshed successfully");
+            expect(response.body.token).toBeDefined();
+        });
+    });
+
+    describe("Token Generation Edge Cases", () => {
+        it("should return 401 if access token generation fails during registration", async () => {
+            mockedUser.findOne.mockResolvedValue(null);
+            mockedBcrypt.hash.mockResolvedValue("hashedPassword" as never);
+
+            mockedGenerateToken.mockImplementation((payload, secret, expiresIn) => {
+                if (secret === 'test-access-secret') return undefined;
+                return 'mock-refresh-token';
+            });
+
+            const response = await request(testApp)
+                .post("/api/v1/users/register")
+                .send({
+                    email: "test@example.com",
+                    password: "123456",
+                    confirmPassword: "123456",
+                    name: "Test User",
+                    team: "Team A",
+                });
+
+            expect(response.status).toBe(401);
+            expect(response.body.message).toBe("Missing authentication tokens.");
+        });
+    });
 });

@@ -1,59 +1,30 @@
-/** @type {import('ts-jest').JestConfigWithTsJest} */
-// module.exports = {
-//   preset: 'ts-jest',
-//   testEnvironment: 'node',
-//   testMatch: ['**/tests/**/*.test.ts'],
-//   moduleFileExtensions: ['ts', 'js', 'json'],
-//   transform: {
-//     '^.+\\.ts$': 'ts-jest',
-//   },
-//   globals: {
-//     'ts-jest': {
-//       tsconfig: 'tsconfig.json',
-//     },
-//   },
-//   verbose: true,
-// };
-
-// module.exports = {
-//   preset: "ts-jest",
-//   testEnvironment: "node",
-//   testMatch: ["**/tests/**/*.test.ts"],
-//   moduleFileExtensions: ["ts", "js", "json"],
-//   // transform: {
-//   //   '^.+\\.ts$': ['ts-jest', {
-//   //     useESM: true,  // important for ESM support
-//   //   }],
-//   // },
-//   globals: {
-//     "ts-jest": {
-//       useESM: true,
-//     },
-//   },
-//   transform: {
-//     "^.+\\.tsx?$": "babel-jest",
-//   },
-//   extensionsToTreatAsEsm: [".ts"],
-//   verbose: true,
-//   testTimeout: 30000,
-//   setupFilesAfterEnv: ["<rootDir>/tests/setup.ts"],
-// };
-
 // jest.config.ts
 import type { JestConfigWithTsJest } from "ts-jest";
+import { resolve } from "path";
 
 const config: JestConfigWithTsJest = {
-  preset: "ts-jest/presets/default-esm", // ESM + TS support
+  preset: "ts-jest",
   testEnvironment: "node",
   testMatch: ["**/tests/**/*.test.ts"],
   moduleFileExtensions: ["ts", "js", "json"],
-  transform: {},
-  extensionsToTreatAsEsm: [".ts"],
-  globals: {
-    "ts-jest": {
-      useESM: true,
-      tsconfig: "./tsconfig.test.json",
-    },
+  transform: {
+    "^.+\\.ts$": [
+      "ts-jest",
+      {
+        tsconfig: "./tsconfig.test.json",
+        useESM: true,
+      },
+    ],
+  },
+  transformIgnorePatterns: [
+    "node_modules/(?!(mongoose|mongodb-memory-server)/)",
+  ],
+  moduleNameMapper: {
+    "^(\\.{1,2}/.*)\\.js$": "$1",
+    "^src/configs/configs$": "<rootDir>/tests/mocks/configs.mock.ts",
+    "^src/configs/minio$": "<rootDir>/tests/mocks/minio.mock.ts",
+    "^src/models/asset.model$": "<rootDir>/tests/mocks/asset.model.mock.ts",
+    "^src/queue/queue$": "<rootDir>/tests/mocks/queue.mock.ts",
   },
   verbose: true,
   testTimeout: 30000,

@@ -15,7 +15,9 @@
             "jest",
             "node"
         ],
-        "module": "nodenext",
-        "moduleResolution": "nodenext"
+        "module": "ESNext",
+        "moduleResolution": "node",
+        "esModuleInterop": true,
+        "allowSyntheticDefaultImports": true
     }
 }
