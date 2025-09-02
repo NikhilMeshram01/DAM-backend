@@ -45,6 +45,13 @@
 
    ```
 
+5. In the new terminal
+
+```
+   npm run worker
+
+```
+
 ## APIs
 
 - POST /api/auth/register → Register new user
@@ -76,3 +83,7 @@ Installed
 
 1. LibreOffice on Windows -> https://www.libreoffice.org/download/download/
 2. ffmpeg + ffprobe on Windows -> https://www.gyan.dev/ffmpeg/builds/
+
+```
+
+```
