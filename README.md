@@ -77,13 +77,7 @@ Tag, Categorize, Search Assets
   POST /api/categories → Create category
   DELETE /api/categories/:id → Delete category
 
-## MongoDB Collections
-
-Installed
+## Install on you system
 
 1. LibreOffice on Windows -> https://www.libreoffice.org/download/download/
 2. ffmpeg + ffprobe on Windows -> https://www.gyan.dev/ffmpeg/builds/
-
-```
-
-```
