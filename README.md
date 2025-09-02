@@ -27,8 +27,8 @@
 
 1. Clone the repo:
    ```bash
-   git clone https://github.com/NikhilMeshram01/Fitness-Tracking-App-Backend.git
-   cd Fitness-Tracking-App-Backend
+   git clone https://github.com/NikhilMeshram01/DAM-backend.git
+   cd DAM-backend
    ```
 2. ```
    npm install
