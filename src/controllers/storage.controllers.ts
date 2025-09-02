@@ -1,11 +1,11 @@
 import type { Request, Response, NextFunction } from "express";
 import { v4 as uuidv4 } from "uuid";
 import path from "path";
-import Asset from "../models/asset.model";
-import { enqueueProcessingJob } from "../queue/queue"; // or general asset processing queue
-import minioClient, { BUCKET } from "../configs/minio";
-import catchAsync from "../utils/catchAsync";
-import { AppError } from "../utils/errorHandler";
+import Asset from "../models/asset.model.js";
+import { enqueueProcessingJob } from "../queue/queue.js"; // or general asset processing queue
+import minioClient, { BUCKET } from "../configs/minio.js";
+import catchAsync from "../utils/catchAsync.js";
+import { AppError } from "../utils/errorHandler.js";
 import mongoose from "mongoose";
 
 // Generate a presigned PUT URL for direct upload to MinIO
@@ -136,19 +136,3 @@ export const downloadAsset = catchAsync(
     }
   }
 );
-
-// export const getAssets = catchAsync(
-//   async (req: Request, res: Response, next: NextFunction) => {}
-// );
-// export const searchAssets = catchAsync(
-//   async (req: Request, res: Response, next: NextFunction) => {}
-// );
-// export const getAsset = catchAsync(
-//   async (req: Request, res: Response, next: NextFunction) => {}
-// );
-// export const getAssetDownloadUrl = catchAsync(
-//   async (req: Request, res: Response, next: NextFunction) => {}
-// );
-// export const deleteAsset = catchAsync(
-//   async (req: Request, res: Response, next: NextFunction) => {}
-// );

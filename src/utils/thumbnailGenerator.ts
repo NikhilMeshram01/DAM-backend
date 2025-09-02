@@ -4,7 +4,6 @@ import Ffmpeg from "fluent-ffmpeg";
 import path from "path";
 import { exec } from "child_process";
 import puppeteer from "puppeteer";
-import type { ConvertOptions } from "pdf-poppler";
 
 export const generateVideoThumbnail = (
   videoPath: string,

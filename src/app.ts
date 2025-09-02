@@ -11,14 +11,14 @@ import { fileURLToPath } from "url";
 import helmet from "helmet";
 import cors from "cors";
 
-import authRoutes from "./routes/auth.routes";
-import analyticsRoutes from "./routes/analytic.routes";
-import storageRoutes from "./routes/storage.routes";
-import assetRoutes from "./routes/asset.routes";
+import authRoutes from "./routes/auth.routes.js";
+import analyticsRoutes from "./routes/analytic.routes.js";
+import storageRoutes from "./routes/storage.routes.js";
+import assetRoutes from "./routes/asset.routes.js";
 
-import { CLIENT_URL } from "./configs/configs";
-import { globalErrorHandler } from "./utils/errorHandler";
-import { apiLimiter } from "./configs/rateLimiter";
+import { CLIENT_URL } from "./configs/configs.js";
+import { globalErrorHandler } from "./utils/errorHandler.js";
+import { apiLimiter } from "./configs/rateLimiter.js";
 
 // Recreate __dirname for ES modules
 const __filename = fileURLToPath(import.meta.url);

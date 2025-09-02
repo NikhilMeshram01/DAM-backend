@@ -1,6 +1,6 @@
-import { authorizeUploaderOrAdmin } from "../../src/middlewares/authorizeUploaderOrAdmin";
-import Asset from "../../src/models/asset.model";
-import { AppError } from "../../src/utils/errorHandler";
+import { authorizeUploaderOrAdmin } from "../../src/middlewares/authorizeUploaderOrAdmin.js";
+import Asset from "../../src/models/asset.model.js";
+import { AppError } from "../../src/utils/errorHandler.js";
 import type { Request, Response, NextFunction } from "express";
 import { Types } from "mongoose";
 

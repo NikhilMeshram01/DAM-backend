@@ -3,8 +3,8 @@ import {
   generatePresignedUrl,
   confirmUpload,
   downloadAsset,
-} from "../controllers/storage.controllers";
-import { authenticateJWT } from "../utils/jwt";
+} from "../controllers/storage.controllers.js";
+import { authenticateJWT } from "../utils/jwt.js";
 
 const router = Router();
 

@@ -1,6 +1,6 @@
 import { Redis } from "ioredis";
 import dotenv from "dotenv";
-import { REDIS_HOST, REDIS_PASSWORD, REDIS_PORT } from "./configs";
+import { REDIS_HOST, REDIS_PASSWORD, REDIS_PORT } from "./configs.js";
 
 dotenv.config();
 

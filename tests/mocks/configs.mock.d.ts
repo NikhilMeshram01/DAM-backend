@@ -1,0 +1,16 @@
+export declare const CLIENT_URL = "http://localhost:3000";
+export declare const NODE_ENV = "test";
+export declare const PORT = 5000;
+export declare const MONGODB_URI = "mongodb://test:test@localhost:27017/test";
+export declare const JWT_ACCESS_SECRET_KEY = "test-access-secret";
+export declare const JWT_REFRESH_SECRET_KEY = "test-refresh-secret";
+export declare const REDIS_PASSWORD = "test-redis-password";
+export declare const REDIS_HOST = "localhost";
+export declare const REDIS_PORT = "6379";
+export declare const MINIO_ENDPOINT = "localhost";
+export declare const MINIO_PORT = "9000";
+export declare const MINIO_USE_SSL = "false";
+export declare const MINIO_ACCESS_KEY = "test-access-key";
+export declare const MINIO_SECRET_KEY = "test-secret-key";
+export declare const MINIO_BUCKET = "test-bucket";
+//# sourceMappingURL=configs.mock.d.ts.map

@@ -1,8 +1,6 @@
 // utils/compression.ts
 import sharp from "sharp";
 import ffmpeg from "fluent-ffmpeg";
-import path from "path";
-import fs from "fs";
 
 export async function compressImage(inputPath: string, outputPath: string) {
   await sharp(inputPath)

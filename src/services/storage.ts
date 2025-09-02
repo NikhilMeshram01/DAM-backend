@@ -1,6 +1,6 @@
 import type { Readable } from "stream";
 import { lookup as mimeLookup } from "mime-types";
-import minioClient, { BUCKET } from "../configs/minio";
+import minioClient, { BUCKET } from "../configs/minio.js";
 
 // ensure bucket exists on boot
 export const ensureBucket = async () => {

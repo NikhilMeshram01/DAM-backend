@@ -1,7 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
-import User from "../models/auth.model";
-import { generateToken } from "../utils/jwt";
+import User from "../models/auth.model.js";
+import { generateToken } from "../utils/jwt.js";
 import bcrypt from "bcryptjs";
 import {
   JWT_ACCESS_EXPIRES_IN,
@@ -9,9 +9,9 @@ import {
   JWT_REFRESH_EXPIRES_IN,
   JWT_REFRESH_SECRET_KEY,
   NODE_ENV,
-} from "../configs/configs";
-import catchAsync from "../utils/catchAsync";
-import { AppError } from "../utils/errorHandler";
+} from "../configs/configs.js";
+import catchAsync from "../utils/catchAsync.js";
+import { AppError } from "../utils/errorHandler.js";
 
 export const registerUser = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -22,23 +22,11 @@ export const registerUser = catchAsync(
       return next(new AppError("Missing required fields", 400));
     }
 
-    // if (password !== confirmPassword) {
-    //   return next(new AppError("Password not matching", 400));
-    // }
-
     // Check if email already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return next(new AppError("Email already in use.", 409));
     }
-    // try {
-    //   const existingUser = await User.findOne({ email });
-    //   if (existingUser) {
-    //     return next(new AppError("Email already in use.", 409));
-    //   }
-    // } catch (err) {
-    //   return next(new AppError("Database query failed", 500));
-    // }
 
     // Create new user
     const user = new User({
@@ -264,80 +252,3 @@ export const refreshTokenHandler = catchAsync(
     });
   }
 );
-
-// export const updateProfile = catchAsync(
-//   async (req: Request, res: Response, next: NextFunction) => {
-//     const { email, firstName, lastName, dob, gender, height, weight, level } =
-//       req.body;
-
-//     const userId = req.user?.userId; // Assuming req.user is set by auth middleware
-//     if (!userId) {
-//       return next(new AppError("User not authenticated", 401));
-//     }
-
-//     const user = await User.findById(userId).select("-refreshToken");
-
-//     if (!user) {
-//       return next(new AppError("User not found", 404));
-//     }
-
-//     // Optional: handle email/password changes with caution
-//     if (email) user.email = email;
-//     // if (name) user.name = name;
-
-//     await user.save();
-
-//     res.status(200).json({
-//       status: "success",
-//       message: "Profile updated successfully",
-//       user,
-//     });
-//   }
-// );
-
-// export const uploadProfilePic = catchAsync(
-//   async (req: Request, res: Response, next: NextFunction) => {
-//     const userId = req.user?.userId; // Assuming req.user is set by auth middleware
-//     if (!userId) return next(new AppError("User not authenticated", 401));
-
-//     const user = await User.findById(userId);
-
-//     if (!user) return next(new AppError("User not found", 404));
-
-//     if (!req.file) return next(new AppError("No image file provided", 400));
-
-//     // let pic = req.file.path;
-//     // const imageURL = await uploadOnCloudinary(pic);
-//     // if (!imageURL) return next(new AppError("Failed to upload image", 400));
-
-//     // if (imageURL) user.profilePicture = imageURL;
-
-//     await user.save();
-
-//     res.status(200).json({
-//       status: "success",
-//       message: "Profile Picture updated successfully",
-//       user,
-//     });
-//   }
-// );
-
-// // controllers/auth.controller.ts
-// export const getUserProfile = catchAsync(
-//   async (req: Request, res: Response, next: NextFunction) => {
-//     if (!req.user?.userId) {
-//       return next(new AppError("Not authorized, no user ID found", 401));
-//     }
-
-//     const user = await User.findById(req.user.userId).select("-password");
-
-//     if (!user) {
-//       return next(new AppError("User not found", 404));
-//     }
-
-//     res.status(200).json({
-//       success: true,
-//       user,
-//     });
-//   }
-// );
